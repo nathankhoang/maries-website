@@ -15,9 +15,6 @@ import {
   buildValidatedIndex,
   lookupValidated,
   closestValidated,
-  escapeXml,
-  buildSsml,
-  TTS_VOICES,
 } from '../lib/text-utils.js';
 import GLOSSARY from '../lib/glossary.js';
 
@@ -60,21 +57,6 @@ test('validated lookup: exact, accent-insensitive, alternates, pronoun-excluded'
   assert.equal(lookupValidated(idx, 'Khong co gi', 'vi2en'), "You're welcome."); // alternate
   assert.equal(lookupValidated(idx, 'I', 'en2vi'), null); // pronoun row excluded
   assert.equal(lookupValidated(idx, 'totally novel phrase', 'en2vi'), null);
-});
-
-test('escapeXml: neutralizes SSML-breaking chars', () => {
-  assert.equal(escapeXml('a & b < c > "d" \'e\''),
-    'a &amp; b &lt; c &gt; &quot;d&quot; &apos;e&apos;');
-});
-
-test('buildSsml: correct voice + escaped, no raw injection', () => {
-  const s = buildSsml('Chào bạn & <x>', 'vi');
-  assert.match(s, /vi-VN-HoaiMyNeural/);
-  assert.match(s, /xml:lang="vi-VN"/);
-  assert.ok(s.includes('&amp;') && s.includes('&lt;x&gt;'));
-  assert.ok(!/<x>/.test(s), 'raw tag must not survive');
-  assert.match(buildSsml('Hello', 'en'), /en-US-JennyNeural/);
-  assert.equal(TTS_VOICES.vi.locale, 'vi-VN');
 });
 
 test('closestValidated: returns a near phrase, null when far', () => {

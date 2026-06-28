@@ -5,13 +5,18 @@ const navLinks = document.querySelector('.nav__links');
 if (toggle && navLinks) {
   toggle.addEventListener('click', () => {
     navLinks.classList.toggle('open');
+    toggle.classList.toggle('is-open');
     const isOpen = navLinks.classList.contains('open');
     toggle.setAttribute('aria-expanded', isOpen);
   });
 
   // Close nav on link click
   navLinks.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => navLinks.classList.remove('open'));
+    a.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      toggle.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    });
   });
 }
 
@@ -88,95 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const styleSheet = document.createElement('style');
 styleSheet.textContent = '.visible { opacity: 1 !important; transform: none !important; }';
 document.head.appendChild(styleSheet);
-
-/* ── Audio: speak the Vietnamese (real Azure neural voice via AVTtts,
- * with automatic browser-voice fallback offline). No audio files needed. */
-let speakingBtn = null;
-
-document.querySelectorAll('.audio-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (!window.AVTtts) return;
-
-    // Find the Vietnamese text in this row.
-    const row = btn.closest('tr');
-    const viCell = row && (row.querySelector('.viet') || row.querySelector('.pronoun-vn'));
-    const text = viCell && viCell.textContent.trim();
-    if (!text) return;
-
-    // Same button while speaking → stop.
-    if (speakingBtn === btn && window.AVTtts.speaking()) {
-      window.AVTtts.stop();
-      btn.classList.remove('playing');
-      speakingBtn = null;
-      return;
-    }
-
-    if (speakingBtn) speakingBtn.classList.remove('playing');
-    speakingBtn = btn;
-
-    const clear = () => {
-      btn.classList.remove('playing');
-      if (speakingBtn === btn) speakingBtn = null;
-    };
-    window.AVTtts.speak(text, 'vi', {
-      onstart: () => btn.classList.add('playing'),
-      onend: clear,
-      onerror: clear,
-    });
-  });
-});
-
-/* ── Translation library search (diacritic-insensitive) ── */
-const transSearch = document.querySelector('#trans-search');
-if (transSearch) {
-  const tabs = document.querySelector('.tabs');
-
-  const norm = (s) =>
-    (s || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '') // strip tone/diacritic marks
-      .replace(/đ/g, 'd')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-  const allRows = Array.from(
-    document.querySelectorAll('.tabs__panel tbody tr')
-  ).map((tr) => ({ tr, hay: norm(tr.textContent) }));
-
-  const sections = Array.from(document.querySelectorAll('.tabs__panel .trans-section'));
-  const panels = Array.from(document.querySelectorAll('.tabs__panel'));
-  const noResults = document.querySelector('#trans-noresults');
-
-  transSearch.addEventListener('input', () => {
-    const q = norm(transSearch.value);
-
-    if (!q) {
-      tabs && tabs.classList.remove('searching');
-      allRows.forEach(({ tr }) => (tr.hidden = false));
-      sections.forEach((s) => (s.hidden = false));
-      panels.forEach((p) => (p.style.display = '')); // hand control back to the tab system
-      if (noResults) noResults.hidden = true;
-      return;
-    }
-
-    tabs && tabs.classList.add('searching');
-    allRows.forEach(({ tr, hay }) => (tr.hidden = !hay.includes(q)));
-
-    // Hide sections / panels that have no visible rows.
-    sections.forEach((sec) => {
-      const hasMatch = sec.querySelector('tbody tr:not([hidden])');
-      sec.hidden = !hasMatch;
-    });
-    let anyMatch = false;
-    panels.forEach((p) => {
-      const hasMatch = p.querySelector('tbody tr:not([hidden])');
-      if (hasMatch) anyMatch = true;
-      p.style.display = hasMatch ? 'block' : 'none';
-    });
-    if (noResults) noResults.hidden = anyMatch;
-  });
-}
 
 /* ── PWA: register service worker (installable + offline phrasebook) ── */
 if ('serviceWorker' in navigator) {

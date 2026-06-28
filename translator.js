@@ -1,7 +1,6 @@
 /* ── AI Translator page ─────────────────────────────
  * Talks to /api/translate (Vercel function: holds the Anthropic key,
  * Marie's validated glossary, domain primer, reference terms).
- * Speech is browser-native and free (speechSynthesis / SpeechRecognition).
  *
  * Adds, with no extra clinical input needed:
  *  - auto language detection
@@ -31,11 +30,8 @@ import {
     trustBadge: $('trustBadge'),
     pronounRow: $('pronounRow'),
     pronounSel: $('pronounSel'),
-    speak: $('speak'),
     copy: $('copy'),
-    speakHint: $('speakHint'),
-    mic: $('mic'),
-    micHint: $('micHint'),
+    copyHint: $('copyHint'),
     dirBtns: document.querySelectorAll('.dir-btn'),
     historyWrap: $('historyWrap'),
     historyList: $('historyList'),
@@ -44,15 +40,14 @@ import {
     suggestionSrc: $('suggestionSrc'),
     suggestionOut: $('suggestionOut'),
     suggestionUse: $('suggestionUse'),
-    suggestionSpeak: $('suggestionSpeak'),
   };
 
   const LANG = {
-    en2vi: { src: 'en', target: 'vi', srcBcp: 'en-US', targetBcp: 'vi-VN', label: 'Vietnamese' },
-    vi2en: { src: 'vi', target: 'en', srcBcp: 'vi-VN', targetBcp: 'en-US', label: 'English' },
+    en2vi: { src: 'en', target: 'vi', label: 'Vietnamese' },
+    vi2en: { src: 'vi', target: 'en', label: 'English' },
   };
   const PLACEHOLDERS = {
-    auto:  'Type or speak a phrase in English or Vietnamese…',
+    auto:  'Type a phrase in English or Vietnamese…',
     en2vi: 'Type an English phrase to translate…',
     vi2en: 'Nhập một câu tiếng Việt để dịch…',
   };
@@ -76,8 +71,6 @@ import {
         b.setAttribute('aria-selected', String(on));
       });
       els.input.placeholder = PLACEHOLDERS[mode];
-      if (recognition && mode === 'vi2en') recognition.lang = 'vi-VN';
-      else if (recognition) recognition.lang = 'en-US';
     });
   });
 
@@ -109,7 +102,7 @@ import {
   function renderResult() {
     const out = applyPronoun(rawOut);
     els.resultText.textContent = out;
-    els.resultText.lang = LANG[effDir].target; // a11y + correct TTS hinting
+    els.resultText.lang = LANG[effDir].target; // a11y + correct language hinting
     if (effDir === 'en2vi' && hasBan(rawOut)) show(els.pronounRow);
     else hide(els.pronounRow);
   }
@@ -199,57 +192,23 @@ import {
     els.pronounSel.selectedIndex = 0;
     renderResult();
     hide(els.suggestionWrap);
-    stopSpeaking();
-  });
-  els.suggestionSpeak.addEventListener('click', () => {
-    if (suggestion) speakText(suggestion.translation, LANG[effDir].target);
   });
 
   els.translate.addEventListener('click', translate);
   els.input.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') translate();
   });
-  els.pronounSel.addEventListener('change', () => {
-    stopSpeaking();
-    renderResult();
-  });
-
-  /* ── Text-to-speech (real Azure neural voice via AVTtts) ── */
-  function stopSpeaking() {
-    if (window.AVTtts) window.AVTtts.stop();
-  }
-  // langKey: 'vi' | 'en'
-  function speakText(text, langKey) {
-    if (!window.AVTtts) {
-      els.speakHint.textContent = 'Speech not supported in this browser.';
-      return;
-    }
-    els.speakHint.textContent = '';
-    window.AVTtts.speak(text, langKey, {
-      onstart: (kind) => {
-        els.speakHint.textContent =
-          kind === 'browser' && langKey === 'vi' && !window.AVTtts.hasViVoice()
-            ? 'Offline: basic browser voice. Reconnect for the natural Vietnamese voice.'
-            : '';
-      },
-      onerror: () => {
-        els.speakHint.textContent = 'Could not play audio. Try again.';
-      },
-    });
-  }
-  els.speak.addEventListener('click', () =>
-    speakText(displayed(), LANG[effDir].target)
-  );
+  els.pronounSel.addEventListener('change', renderResult);
 
   /* ── Copy ─────────────────────────────────────── */
   els.copy.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(displayed());
-      const prev = els.copy.innerHTML;
+      const prev = els.copy.textContent;
       els.copy.textContent = 'Copied ✓';
-      setTimeout(() => (els.copy.innerHTML = prev), 1400);
+      setTimeout(() => (els.copy.textContent = prev), 1400);
     } catch {
-      els.speakHint.textContent = 'Copy not available — select the text manually.';
+      if (els.copyHint) els.copyHint.textContent = 'Copy not available — select the text manually.';
     }
   });
 
@@ -296,36 +255,4 @@ import {
     history.length = 0;
     renderHistory();
   });
-
-  /* ── Optional voice dictation ─────────────────── */
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recognition = null;
-  if (SR) {
-    recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.addEventListener('result', (e) => {
-      const t = e.results[0][0].transcript;
-      els.input.value = els.input.value ? els.input.value.trim() + ' ' + t : t;
-    });
-    recognition.addEventListener('end', () => els.mic.classList.remove('recording'));
-    recognition.addEventListener('error', (e) => {
-      els.mic.classList.remove('recording');
-      if (e.error === 'not-allowed') els.micHint.textContent = '🎤 Microphone permission denied.';
-    });
-    show(els.mic);
-    show(els.micHint);
-    els.mic.addEventListener('click', () => {
-      if (els.mic.classList.contains('recording')) {
-        recognition.stop();
-        return;
-      }
-      try {
-        recognition.lang = mode === 'vi2en' ? 'vi-VN' : 'en-US';
-        recognition.start();
-        els.mic.classList.add('recording');
-      } catch (_) {}
-    });
-  }
 })();

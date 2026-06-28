@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Admin — AuD Viet Translations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- ── Login view ──────────────────────────────────────── -->
+<div id="login-view" hidden>
+  <div class="login-card">
+    <span class="login-card__blossom" aria-hidden="true">✿</span>
+    <h1 class="login-card__title">Admin</h1>
+    <p class="login-card__sub">AuD Viet Translations</p>
+    <form id="login-form" novalidate>
+      <div class="form-field">
+        <label class="form-label" for="password">Password</label>
+        <input
+          class="form-input"
+          type="password"
+          id="password"
+          name="password"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+      <div id="login-error" class="status status--error" role="alert" aria-live="assertive" hidden></div>
+      <button class="btn btn-primary btn--full" type="submit" id="login-btn">Log in</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Editor view ─────────────────────────────────────── -->
+<div id="editor-view" hidden>
+
+  <header class="admin-header">
+    <div class="admin-header__inner">
+      <div class="admin-header__brand">
+        <span class="admin-header__blossom" aria-hidden="true">✿</span>
+        <div>
+          <h1 class="admin-header__title">Phrasebook Editor</h1>
+          <p class="admin-header__sub">Manage the AuD Viet translation library — add, edit, or remove phrases.</p>
+        </div>
+      </div>
+      <button class="btn btn-outline" id="logout-btn" type="button">Log out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-container">
+
+      <!-- Add phrase form -->
+      <section class="admin-panel" aria-labelledby="add-heading">
+        <h2 class="admin-panel__title" id="add-heading">Add phrase</h2>
+        <form id="add-form" novalidate>
+          <div class="add-form__grid">
+            <div class="form-field">
+              <label class="form-label" for="add-category">
+                Category <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+              <input
+                class="form-input"
+                type="text"
+                id="add-category"
+                name="category"
+                list="category-list"
+                placeholder="e.g. greetings"
+                autocomplete="off"
+                required
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="add-subsection">Subsection</label>
+              <input
+                class="form-input"
+                type="text"
+                id="add-subsection"
+                name="subsection"
+                list="subsection-list"
+                placeholder="optional"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="add-en">English</label>
+              <input
+                class="form-input"
+                type="text"
+                id="add-en"
+                name="en"
+                placeholder="English phrase"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="add-vi">
+                Vietnamese <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+              <input
+                class="form-input"
+                type="text"
+                id="add-vi"
+                name="vi"
+                placeholder="Cụm từ tiếng Việt"
+                required
+              />
+            </div>
+            <div class="form-field form-field--wide">
+              <label class="form-label" for="add-note">Note</label>
+              <input
+                class="form-input"
+                type="text"
+                id="add-note"
+                name="note"
+                placeholder="Optional note or pronunciation hint"
+              />
+            </div>
+          </div>
+          <div class="add-form__footer">
+            <div id="add-status" class="status" role="status" aria-live="polite"></div>
+            <button class="btn btn-primary" type="submit" id="add-btn">Add phrase</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Phrase list -->
+      <section class="admin-panel" aria-labelledby="list-heading">
+        <div class="list-header">
+          <h2 class="admin-panel__title" id="list-heading">All phrases</h2>
+          <div class="search-wrap">
+            <label class="sr-only" for="search">Search phrases</label>
+            <input
+              class="search-input"
+              type="search"
+              id="search"
+              placeholder="Search en, vi, note, category..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div id="list-status" class="status" role="status" aria-live="polite"></div>
+        <div id="phrase-list">
+          <p class="list-loading">Loading phrases...</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Datalists — populated by admin.js -->
+<datalist id="category-list"></datalist>
+<datalist id="subsection-list"></datalist>
+
+<script src="admin.js"></script>
+</body>
+</html>

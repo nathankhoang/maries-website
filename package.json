@@ -7,11 +7,12 @@
   "scripts": {
     "extract-glossary": "node scripts/extract-glossary.mjs",
     "make-icons": "node scripts/make-icons.mjs",
-    "test": "node --test",
-    "dev": "vercel dev"
+    "seed": "node scripts/seed.mjs",
+    "test": "node --test"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@vercel/postgres": "^0.10.0"
   },
   "devDependencies": {
     "cheerio": "^1.0.0"

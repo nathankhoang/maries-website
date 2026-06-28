@@ -7,7 +7,7 @@
  *  - same-origin GET → stale-while-revalidate (instant offline, self-healing).
  *  - navigation offline & uncached → fall back to the offline phrasebook.
  */
-const CACHE = 'audviet-v2';
+const CACHE = 'audviet-v3';
 const ASSETS = [
   '/index.html',
   '/about.html',
@@ -16,8 +16,8 @@ const ASSETS = [
   '/translator.html',
   '/styles.css',
   '/main.js',
-  '/tts.js',
   '/translator.js',
+  '/phrasebook.js',
   '/lib/text-utils.js',
   '/manifest.webmanifest',
   '/images/icon-192.png',
@@ -49,26 +49,28 @@ self.addEventListener('fetch', (e) => {
   // Non-GET / cross-origin → don't intercept.
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // /api/tts is deterministic audio (immutable) → cache-first so replayed
-  // phrasebook phrases work offline and don't re-bill Azure.
-  if (url.pathname === '/api/tts') {
+  // /api/phrases is the phrasebook content → network-first with cache
+  // fallback so the phrasebook still loads offline (clinic wifi is spotty).
+  if (url.pathname === '/api/phrases') {
     e.respondWith(
       caches.open(CACHE).then(async (cache) => {
-        const hit = await cache.match(request);
-        if (hit) return hit;
         try {
           const resp = await fetch(request);
           if (resp && resp.status === 200) cache.put(request, resp.clone());
           return resp;
         } catch {
-          return new Response('', { status: 504, statusText: 'Offline' });
+          return (await cache.match(request)) ||
+            new Response('{"groups":[]}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
         }
       })
     );
     return;
   }
 
-  // Other /api/* (translate) → always live, never cached.
+  // Other /api/* (translate, admin) → always live, never cached.
   if (url.pathname.startsWith('/api/')) return;
 
   e.respondWith(
