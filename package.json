@@ -1,0 +1,19 @@
+{
+  "name": "aud-viet-translations",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AuD Viet Translations — audiology English↔Vietnamese phrasebook + glossary-grounded AI translator.",
+  "scripts": {
+    "extract-glossary": "node scripts/extract-glossary.mjs",
+    "make-icons": "node scripts/make-icons.mjs",
+    "test": "node --test",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Translator — AuD Viet Translations</title>
+  <meta name="description" content="Audiology-aware English↔Vietnamese AI translator that uses Marie's expert-validated clinical terminology." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#db2777" />
+  <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/images/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="AuD Viet" />
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────── -->
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__brand">
+      <span class="nav__brand-title">AuD Viet Translations</span>
+      <span class="nav__brand-sub">by audiomarie</span>
+    </a>
+    <button class="nav__toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="translations.html">Translations</a></li>
+      <li><a href="translator.html" class="active">AI Translator</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Page hero ────────────────────────────────── -->
+<section class="page-hero">
+  <div class="container">
+    <span class="page-hero__eyebrow">Clinical AI Tool</span>
+    <h1 class="page-hero__title">AI Translator</h1>
+    <span class="hero__script" style="font-size:1.3rem; display:block; margin-bottom:12px;">Tiếng Việt ✿ Vietnamese</span>
+    <p class="page-hero__desc">
+      Type or speak a phrase and get an audiology-aware translation that uses
+      Marie's expert-validated clinical terminology — for anything not already in
+      the <a href="translations.html">Translations</a> library.
+    </p>
+  </div>
+</section>
+
+<!-- ── Translator ───────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="translator">
+
+      <div class="translator__disclaimer">
+        <strong>Please note:</strong> This is an AI communication aid for audiology.
+        Translations may contain errors and it is <strong>not a substitute for a
+        certified medical interpreter</strong>, nor does it provide medical advice.
+        Vietnamese output uses <strong>"bạn"</strong> as a placeholder — replace it
+        with the appropriate pronoun (see the <a href="translations.html">Pronouns</a> guide).
+      </div>
+
+      <div class="dir-toggle" role="tablist" aria-label="Translation direction">
+        <button class="dir-btn active" data-dir="auto" role="tab" aria-selected="true">Auto-detect</button>
+        <button class="dir-btn" data-dir="en2vi" role="tab" aria-selected="false">English → Tiếng Việt</button>
+        <button class="dir-btn" data-dir="vi2en" role="tab" aria-selected="false">Tiếng Việt → English</button>
+      </div>
+
+      <div class="translator__field">
+        <textarea id="input"
+          placeholder="Type an English phrase to translate…"
+          aria-label="Phrase to translate"
+          maxlength="1000"></textarea>
+        <button id="mic" class="mic-btn" type="button" aria-label="Speak the phrase" hidden>
+          <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+        </button>
+      </div>
+
+      <div class="translator__actions">
+        <button id="translate" class="btn btn-primary" type="button">Translate</button>
+        <span class="translator__hint" id="micHint" hidden>🎤 Mic available — click the icon to dictate.</span>
+      </div>
+
+      <div class="translator__status" id="status" role="status" aria-live="polite" hidden>Translating…</div>
+      <div class="translator__error" id="error" role="alert" aria-live="assertive" hidden></div>
+
+      <div class="translator__result" id="result" aria-live="polite" hidden>
+        <div class="translator__result-head">
+          <span class="translator__result-label" id="resultLabel">Vietnamese</span>
+          <span class="trust-badge" id="trustBadge" hidden></span>
+        </div>
+        <div class="translator__result-text" id="resultText"></div>
+
+        <div class="pronoun-row" id="pronounRow" hidden>
+          <label for="pronounSel">Patient pronoun (replaces <strong>bạn</strong>):</label>
+          <select id="pronounSel" aria-label="Choose the pronoun for this patient">
+            <option value="bạn" data-cap="Bạn" selected>bạn — neutral / unsure</option>
+            <option value="anh" data-cap="Anh">Anh — man, your age or older</option>
+            <option value="chị" data-cap="Chị">Chị — woman, your age or older</option>
+            <option value="em" data-cap="Em">Em — person younger than you</option>
+            <option value="chú" data-cap="Chú">Chú — man around uncle's age</option>
+            <option value="cô" data-cap="Cô">Cô — woman around aunt's age</option>
+            <option value="ông" data-cap="Ông">Ông — man around grandfather's age</option>
+            <option value="bà" data-cap="Bà">Bà — woman around grandmother's age</option>
+            <option value="con" data-cap="Con">Con — a child</option>
+          </select>
+        </div>
+
+        <div class="translator__result-foot">
+          <button class="speak-btn" id="speak" type="button">
+            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
+            Listen
+          </button>
+          <button class="speak-btn" id="copy" type="button">
+            <svg viewBox="0 0 24 24"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
+            Copy
+          </button>
+          <span class="translator__hint" id="speakHint"></span>
+        </div>
+      </div>
+
+      <div class="translator__suggestion" id="suggestionWrap" hidden>
+        <span class="translator__suggestion-label">✓ Closest clinician-validated phrase</span>
+        <p class="translator__suggestion-src" id="suggestionSrc"></p>
+        <p class="translator__suggestion-out" id="suggestionOut"></p>
+        <div class="translator__suggestion-foot">
+          <button class="speak-btn" id="suggestionUse" type="button">Use this instead</button>
+          <button class="speak-btn" id="suggestionSpeak" type="button">
+            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
+            Listen
+          </button>
+        </div>
+      </div>
+
+      <div class="translator__history" id="historyWrap" hidden>
+        <div class="translator__history-head">
+          <span>Recent (this session only)</span>
+          <button id="clearHistory" type="button">Clear</button>
+        </div>
+        <ul id="historyList"></ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer__brand">AuD Viet Translations</p>
+    <span class="footer__script">by audiomarie</span>
+    <ul class="footer__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="translations.html">Translations</a></li>
+      <li><a href="translator.html">AI Translator</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <p class="footer__copy">&copy; 2025 Au.D. Viet Translations by Marie Phamille. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="tts.js"></script>
+<script src="main.js"></script>
+<script type="module" src="translator.js"></script>
+</body>
+</html>

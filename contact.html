@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — AuD Viet Translations</title>
+  <meta name="description" content="Reach out to Marie Phamille with questions, feedback, or translation ideas." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#db2777" />
+  <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/images/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="AuD Viet" />
+  <style>
+    /* Contact page extras */
+    .contact-photo {
+      width: 100%;
+      border-radius: var(--radius-xl);
+      object-fit: cover;
+      object-position: center top;
+      min-height: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+    .contact-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--pink-800);
+      margin-bottom: 10px;
+    }
+    .contact-card .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+    .contact-divider {
+      width: 48px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--pink-400), var(--pink-600));
+      border-radius: 3px;
+      margin-bottom: 28px;
+    }
+    .comment-note {
+      margin-top: 36px;
+      padding: 20px 24px;
+      background: var(--pink-50);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-light);
+      text-align: center;
+      font-size: 1rem;
+      color: var(--pink-700);
+    }
+    .comment-note span {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────── -->
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__brand">
+      <span class="nav__brand-title">AuD Viet Translations</span>
+      <span class="nav__brand-sub">by audiomarie</span>
+    </a>
+    <button class="nav__toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="translations.html">Translations</a></li>
+      <li><a href="translator.html">AI Translator</a></li>
+      <li><a href="contact.html" class="active">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Page hero ────────────────────────────────── -->
+<section class="page-hero">
+  <div class="container">
+    <span class="page-hero__eyebrow">Get in touch</span>
+    <h1 class="page-hero__title">Contact Me</h1>
+    <p class="page-hero__desc">
+      Questions, feedback, website issues, or translation ideas — I'd love to hear from you.
+    </p>
+  </div>
+</section>
+
+<!-- ── Contact section ──────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="split">
+
+      <!-- Photo -->
+      <div class="split__media">
+        <img
+          class="contact-photo"
+          src="images/contact-marie.jpg"
+          alt="Marie Phamille"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="photo-placeholder" style="display:none; min-height:420px;">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          Photo of Marie
+        </div>
+        <div class="split__media-accent"></div>
+      </div>
+
+      <!-- Contact info -->
+      <div class="split__content">
+        <div class="contact-card">
+          <h2>Let's Connect</h2>
+          <div class="contact-divider"></div>
+          <p class="subtitle">
+            Feel free to reach out to me with any questions, feedback, website issues, or translation ideas!
+          </p>
+
+          <ul class="contact-info">
+            <li>
+              <span class="contact-info__icon" aria-hidden="true">✉️</span>
+              <a href="mailto:mphamille@gmail.com">mphamille@gmail.com</a>
+            </li>
+            <li>
+              <span class="contact-info__icon" aria-hidden="true">📸</span>
+              <a href="https://www.instagram.com/audiomarie" target="_blank" rel="noopener">
+                @audiomarie
+              </a>
+            </li>
+            <li>
+              <span class="contact-info__icon" aria-hidden="true">💼</span>
+              <a href="https://www.linkedin.com/in/marie-phamille" target="_blank" rel="noopener">
+                Marie Phamille — LinkedIn
+              </a>
+            </li>
+            <li>
+              <span class="contact-info__icon" aria-hidden="true">📘</span>
+              <a href="https://www.facebook.com/marie.phamille" target="_blank" rel="noopener">
+                Marie Phamille — Facebook
+              </a>
+            </li>
+          </ul>
+
+          <div class="comment-note">
+            Leave a comment! Tell me about your experience ♡
+            <span>Your feedback helps improve this resource for everyone.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Newsletter ───────────────────────────────── -->
+<section class="newsletter">
+  <div class="container">
+    <h2>Be the first to know of our updates!</h2>
+    <p>Subscribe to our newsletter to receive news and updates.</p>
+    <form class="newsletter-form">
+      <input type="email" placeholder="Enter your email here" required aria-label="Email address" />
+      <button type="submit">Sign Up</button>
+    </form>
+    <p class="newsletter-thanks">Thanks for submitting! 🌸</p>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer__brand">AuD Viet Translations</p>
+    <span class="footer__script">by audiomarie</span>
+    <ul class="footer__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="translations.html">Translations</a></li>
+      <li><a href="translator.html">AI Translator</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <p class="footer__copy">&copy; 2025 Au.D. Viet Translations by Marie Phamille. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="tts.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
