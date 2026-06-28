@@ -710,3 +710,75 @@ input:focus-visible,
     justify-content: flex-end;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   COLLAPSIBLE CATEGORY GROUPS (<details>/<summary>)
+   ══════════════════════════════════════════════════════ */
+details.phrase-group > summary.phrase-group__header {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  align-items: center;
+}
+details.phrase-group > summary.phrase-group__header::-webkit-details-marker {
+  display: none;
+}
+.phrase-group__header::before {
+  content: '▸';
+  color: var(--pink-500);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  transition: transform var(--transition);
+}
+details.phrase-group[open] > .phrase-group__header::before {
+  transform: rotate(90deg);
+}
+details.phrase-group > summary.phrase-group__header:hover .phrase-group__title {
+  color: var(--pink-600);
+}
+
+/* ══════════════════════════════════════════════════════
+   CATEGORY / SUBSECTION PICKER
+   ══════════════════════════════════════════════════════ */
+.picker { display: flex; flex-direction: column; gap: 6px; }
+.picker__select { cursor: pointer; }
+.picker__new { margin-top: 2px; }
+
+/* ══════════════════════════════════════════════════════
+   AUDIO FIELD (upload / player / remove)
+   ══════════════════════════════════════════════════════ */
+.audio-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.audio-field__input { display: none; }
+.audio-field__upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--pink-700);
+  background: var(--pink-50);
+  border: 1px dashed var(--pink-300);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  transition: background var(--transition), border-color var(--transition);
+}
+.audio-field__upload:hover {
+  background: var(--pink-100);
+  border-color: var(--pink-500);
+}
+.audio-field__upload.is-uploading { opacity: 0.7; cursor: default; }
+.audio-field__player { height: 36px; max-width: 100%; }
+.audio-field__error { color: #b91c1c; font-size: 0.8rem; width: 100%; }
+
+/* Inline audio preview on a normal phrase row */
+.phrase-row__audio {
+  height: 34px;
+  max-width: 260px;
+  margin-top: 8px;
+}

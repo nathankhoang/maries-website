@@ -6,7 +6,7 @@
 
 'use strict';
 
-/* ── Category display labels ───────────────────────── */
+/* ── Category display labels + ordering ────────────── */
 const CATEGORY_LABELS = {
   pronouns:  'Pronouns',
   greetings: 'Greetings',
@@ -15,6 +15,7 @@ const CATEGORY_LABELS = {
   diagnoses: 'Diagnoses',
   results:   'Results & Recs',
 };
+const CATEGORY_ORDER = ['pronouns', 'greetings', 'history', 'testing', 'diagnoses', 'results'];
 
 function displayCategory(cat) {
   if (!cat) return '(Uncategorized)';
@@ -27,6 +28,12 @@ let phrases     = [];
 let searchQuery = '';
 let editingId   = null;
 let deletingId  = null;
+const openGroups = new Set();   // categories the user has expanded
+
+/* Add-form controls (built dynamically). */
+let addCatPicker = null;
+let addSubPicker = null;
+let addAudio     = null;
 
 /* ── DOM refs ──────────────────────────────────────── */
 const loginView   = document.getElementById('login-view');
@@ -40,12 +47,9 @@ const addStatus   = document.getElementById('add-status');
 const listStatus  = document.getElementById('list-status');
 const phraseList  = document.getElementById('phrase-list');
 const searchInput = document.getElementById('search');
-const catDatalist = document.getElementById('category-list');
-const subDatalist = document.getElementById('subsection-list');
 
 /* ══════════════════════════════════════════════════════
    STATUS HELPER
-   Per-element auto-clear timer stored as _timer property.
    ══════════════════════════════════════════════════════ */
 function showStatus(el, msg, isError) {
   if (el._timer) { clearTimeout(el._timer); el._timer = null; }
@@ -64,8 +68,6 @@ function showStatus(el, msg, isError) {
 /* ══════════════════════════════════════════════════════
    AUTH — LOGIN / LOGOUT
    ══════════════════════════════════════════════════════ */
-
-/** On page load: probe the API; route to the right view. */
 async function checkAuth() {
   try {
     const res = await fetch('/api/admin/phrases', { credentials: 'same-origin' });
@@ -91,10 +93,10 @@ function showLoginView() {
 function showEditorView() {
   loginView.hidden = true;
   editorView.hidden = false;
-  buildDataLists();
-  renderPhraseList();
   searchInput.value = '';
   searchQuery = '';
+  mountAddControls();
+  renderPhraseList();
 }
 
 function handleUnauthorized() {
@@ -102,11 +104,11 @@ function handleUnauthorized() {
   editingId   = null;
   deletingId  = null;
   searchQuery = '';
+  openGroups.clear();
   showLoginView();
   showLoginError('Your session expired. Please log in again.');
 }
 
-/* ── Login form ────────────────────────────────────── */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const password = document.getElementById('password').value;
@@ -125,7 +127,6 @@ loginForm.addEventListener('submit', async (e) => {
     const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
-      /* Fetch the phrase list immediately so the editor is ready. */
       const listRes = await fetch('/api/admin/phrases', { credentials: 'same-origin' });
       if (!listRes.ok) {
         showLoginError('Login succeeded but could not load phrases. Please try refreshing.');
@@ -152,62 +153,200 @@ function showLoginError(msg) {
   loginError.hidden = false;
 }
 
-/* ── Logout button ─────────────────────────────────── */
 logoutBtn.addEventListener('click', async () => {
   logoutBtn.disabled = true;
   try {
     await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
-  } catch (_) { /* ignore network errors on logout */ }
+  } catch (_) { /* ignore */ }
   phrases     = [];
   editingId   = null;
   deletingId  = null;
   searchQuery = '';
+  openGroups.clear();
   logoutBtn.disabled = false;
   showLoginView();
 });
 
 /* ══════════════════════════════════════════════════════
-   DATALISTS (category + subsection autocomplete)
+   CATEGORY / SUBSECTION PICKER  (choose existing or add new)
    ══════════════════════════════════════════════════════ */
-function buildDataLists() {
-  const cats = [...new Set(phrases.map(p => p.category).filter(Boolean))].sort();
-  const subs = [...new Set(phrases.map(p => p.subsection).filter(Boolean))].sort();
+function distinctCategories() {
+  return [...new Set(phrases.map(p => p.category).filter(Boolean))].sort();
+}
+function distinctSubsections() {
+  return [...new Set(phrases.map(p => p.subsection).filter(Boolean))].sort();
+}
 
-  catDatalist.textContent = '';
-  cats.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c;
-    catDatalist.appendChild(opt);
+function makePicker(kind, value) {
+  const isCat = kind === 'category';
+  const wrap = document.createElement('div');
+  wrap.className = 'picker';
+
+  const select = document.createElement('select');
+  select.className = 'form-input picker__select';
+  select.appendChild(new Option(isCat ? 'Choose a category…' : '— none —', ''));
+
+  const values = isCat ? distinctCategories() : distinctSubsections();
+  values.forEach(v => select.appendChild(new Option(isCat ? displayCategory(v) : v, v)));
+  if (value && !values.includes(value)) {
+    select.appendChild(new Option(isCat ? displayCategory(value) : value, value));
+  }
+  select.appendChild(new Option(isCat ? '➕ Add new category…' : '➕ Add new subsection…', '__new__'));
+
+  const input = document.createElement('input');
+  input.className = 'form-input picker__new';
+  input.type = 'text';
+  input.placeholder = isCat ? 'New category name' : 'New subsection name';
+  input.hidden = true;
+
+  if (value) select.value = value;
+
+  select.addEventListener('change', () => {
+    if (select.value === '__new__') { input.hidden = false; input.focus(); }
+    else { input.hidden = true; input.value = ''; }
   });
 
-  subDatalist.textContent = '';
-  subs.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s;
-    subDatalist.appendChild(opt);
-  });
+  wrap.appendChild(select);
+  wrap.appendChild(input);
+  wrap.getValue = () => (select.value === '__new__' ? input.value.trim() : select.value.trim());
+  return wrap;
 }
 
 /* ══════════════════════════════════════════════════════
-   ADD PHRASE FORM
+   AUDIO UPLOAD  (Marie's own recordings → Vercel Blob)
    ══════════════════════════════════════════════════════ */
+async function uploadAudio(file) {
+  const res = await fetch('/api/admin/audio?filename=' + encodeURIComponent(file.name), {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Session expired.'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Upload failed.');
+  return data.url;
+}
+async function deleteAudio(url) {
+  try {
+    await fetch('/api/admin/audio?url=' + encodeURIComponent(url), {
+      method: 'DELETE', credentials: 'same-origin',
+    });
+  } catch (_) { /* non-fatal */ }
+}
+
+/* A self-contained audio control: shows a player + remove when a recording
+   exists, otherwise an upload button. Exposes getValue()/isUploading(). */
+function makeAudioField(initialUrl) {
+  let url = initialUrl || null;
+  let uploading = false;
+  const wrap = document.createElement('div');
+  wrap.className = 'audio-field';
+
+  function render() {
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    if (url) {
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = url;
+      audio.className = 'audio-field__player';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'action-btn action-btn--cancel';
+      remove.textContent = 'Remove audio';
+      remove.addEventListener('click', () => {
+        const old = url;
+        url = null;
+        render();
+        deleteAudio(old);
+      });
+      wrap.appendChild(audio);
+      wrap.appendChild(remove);
+    } else {
+      const label = document.createElement('label');
+      label.className = 'audio-field__upload';
+      label.textContent = uploading ? 'Uploading…' : '🎙 Choose audio file';
+      if (uploading) label.classList.add('is-uploading');
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/*';
+      input.className = 'audio-field__input';
+      input.disabled = uploading;
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        uploading = true; render();
+        try {
+          url = await uploadAudio(file);
+          uploading = false; render();
+        } catch (e) {
+          uploading = false; render();
+          const err = document.createElement('span');
+          err.className = 'audio-field__error';
+          err.textContent = e.message || 'Upload failed.';
+          wrap.appendChild(err);
+        }
+      });
+      label.appendChild(input);
+      wrap.appendChild(label);
+    }
+  }
+  render();
+  wrap.getValue = () => url;
+  wrap.isUploading = () => uploading;
+  return wrap;
+}
+
+/* Wrap a custom control in a labelled form field. */
+function wrapField(labelText, controlEl) {
+  const field = document.createElement('div');
+  field.className = 'form-field';
+  const lbl = document.createElement('label');
+  lbl.className = 'form-label';
+  lbl.textContent = labelText;
+  field.appendChild(lbl);
+  field.appendChild(controlEl);
+  return field;
+}
+
+/* ══════════════════════════════════════════════════════
+   ADD-PHRASE CONTROLS (pickers + audio) — (re)mounted on data change
+   ══════════════════════════════════════════════════════ */
+function mountAddControls() {
+  const catBox   = document.getElementById('add-category-picker');
+  const subBox   = document.getElementById('add-subsection-picker');
+  const audioBox = document.getElementById('add-audio');
+  if (!catBox || !subBox || !audioBox) return;
+  addCatPicker = makePicker('category', '');
+  addSubPicker = makePicker('subsection', '');
+  addAudio     = makeAudioField(null);
+  catBox.replaceChildren(addCatPicker);
+  subBox.replaceChildren(addSubPicker);
+  audioBox.replaceChildren(addAudio);
+}
+
 addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const fd       = new FormData(addForm);
-  const category = fd.get('category').trim();
-  const vi       = fd.get('vi').trim();
+  const category = addCatPicker ? addCatPicker.getValue() : '';
+  const vi       = document.getElementById('add-vi').value.trim();
 
   if (!category) { showStatus(addStatus, 'Category is required.', true); return; }
   if (!vi)       { showStatus(addStatus, 'Vietnamese phrase is required.', true); return; }
+  if (addAudio && addAudio.isUploading()) {
+    showStatus(addStatus, 'Please wait for the audio to finish uploading.', true);
+    return;
+  }
 
   const body = { category, vi };
-  const subsection = fd.get('subsection').trim();
-  const en         = fd.get('en').trim();
-  const note       = fd.get('note').trim();
+  const subsection = addSubPicker ? addSubPicker.getValue() : '';
+  const en        = document.getElementById('add-en').value.trim();
+  const note      = document.getElementById('add-note').value.trim();
+  const audioUrl  = addAudio ? addAudio.getValue() : null;
   if (subsection) body.subsection = subsection;
   if (en)         body.en = en;
   if (note)       body.note = note;
+  if (audioUrl)   body.audio_url = audioUrl;
 
   const addBtn = document.getElementById('add-btn');
   addBtn.disabled = true;
@@ -226,8 +365,11 @@ addForm.addEventListener('submit', async (e) => {
       return;
     }
     phrases.push(data.phrase);
-    addForm.reset();
-    buildDataLists();
+    openGroups.add(category);
+    document.getElementById('add-en').value = '';
+    document.getElementById('add-vi').value = '';
+    document.getElementById('add-note').value = '';
+    mountAddControls();
     renderPhraseList();
     showStatus(addStatus, 'Phrase added.', false);
   } catch (_) {
@@ -242,7 +384,7 @@ addForm.addEventListener('submit', async (e) => {
    ══════════════════════════════════════════════════════ */
 searchInput.addEventListener('input', () => {
   searchQuery = searchInput.value;
-  editingId   = null;   /* cancel any open edit when searching */
+  editingId   = null;
   deletingId  = null;
   renderPhraseList();
 });
@@ -257,12 +399,9 @@ function getFilteredPhrases() {
 }
 
 /* ══════════════════════════════════════════════════════
-   RENDER PHRASE LIST
-   Groups: category → subsection → rows.
-   All text set via textContent — no innerHTML with user data.
+   RENDER PHRASE LIST — collapsible category → subsection → rows
    ══════════════════════════════════════════════════════ */
 function renderPhraseList() {
-  /* Clear the list — wipe child nodes, not innerHTML */
   while (phraseList.firstChild) phraseList.removeChild(phraseList.firstChild);
 
   const filtered = getFilteredPhrases();
@@ -277,7 +416,7 @@ function renderPhraseList() {
     return;
   }
 
-  /* Build: category → Map(subsection → phrase[]) */
+  /* category → Map(subsection → phrase[]) */
   const groups = new Map();
   filtered.forEach(p => {
     const cat = p.category || '';
@@ -288,61 +427,59 @@ function renderPhraseList() {
     subMap.get(sub).push(p);
   });
 
-  groups.forEach((subMap, cat) => {
+  /* Order: known categories first, then the rest alphabetically. */
+  const cats = [...groups.keys()];
+  const ordered = [
+    ...CATEGORY_ORDER.filter(c => groups.has(c)),
+    ...cats.filter(c => !CATEGORY_ORDER.includes(c)).sort(),
+  ];
+  const searching = !!searchQuery.trim();
+
+  ordered.forEach(cat => {
+    const subMap = groups.get(cat);
     const totalInCat = [...subMap.values()].reduce((n, arr) => n + arr.length, 0);
 
-    /* ── Category group wrapper ── */
-    const groupEl = document.createElement('div');
-    groupEl.className = 'phrase-group';
+    const details = document.createElement('details');
+    details.className = 'phrase-group';
+    details.open = searching || openGroups.has(cat);
+    details.addEventListener('toggle', () => {
+      if (details.open) openGroups.add(cat); else openGroups.delete(cat);
+    });
 
-    /* Category header */
-    const catHeader = document.createElement('div');
-    catHeader.className = 'phrase-group__header';
-
+    const summary = document.createElement('summary');
+    summary.className = 'phrase-group__header';
     const catTitle = document.createElement('h3');
     catTitle.className = 'phrase-group__title';
     catTitle.textContent = displayCategory(cat);
-
     const catCount = document.createElement('span');
     catCount.className = 'phrase-group__count';
     catCount.textContent = totalInCat + (totalInCat === 1 ? ' phrase' : ' phrases');
+    summary.appendChild(catTitle);
+    summary.appendChild(catCount);
+    details.appendChild(summary);
 
-    catHeader.appendChild(catTitle);
-    catHeader.appendChild(catCount);
-    groupEl.appendChild(catHeader);
-
-    /* ── Subsection groups ── */
     subMap.forEach((subPhrases, sub) => {
       if (sub) {
         const subHeader = document.createElement('div');
         subHeader.className = 'phrase-subgroup';
-
         const subTitle = document.createElement('h4');
         subTitle.className = 'phrase-subgroup__title';
         subTitle.textContent = sub;
-
         const subCount = document.createElement('span');
         subCount.className = 'phrase-subgroup__count';
         subCount.textContent = '(' + subPhrases.length + ')';
-
         subHeader.appendChild(subTitle);
         subHeader.appendChild(subCount);
-        groupEl.appendChild(subHeader);
+        details.appendChild(subHeader);
       }
-
-      /* ── Phrase rows ── */
       subPhrases.forEach(p => {
-        if (editingId === p.id) {
-          groupEl.appendChild(buildEditRow(p));
-        } else if (deletingId === p.id) {
-          groupEl.appendChild(buildConfirmRow(p));
-        } else {
-          groupEl.appendChild(buildPhraseRow(p));
-        }
+        if (editingId === p.id)        details.appendChild(buildEditRow(p));
+        else if (deletingId === p.id)  details.appendChild(buildConfirmRow(p));
+        else                           details.appendChild(buildPhraseRow(p));
       });
     });
 
-    phraseList.appendChild(groupEl);
+    phraseList.appendChild(details);
   });
 }
 
@@ -374,6 +511,15 @@ function buildPhraseRow(p) {
     content.appendChild(note);
   }
 
+  if (p.audio_url) {
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    audio.preload = 'none';
+    audio.src = p.audio_url;
+    audio.className = 'phrase-row__audio';
+    content.appendChild(audio);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'phrase-row__actions';
 
@@ -381,6 +527,7 @@ function buildPhraseRow(p) {
   editBtn.addEventListener('click', () => {
     editingId  = p.id;
     deletingId = null;
+    openGroups.add(p.category || '');
     renderPhraseList();
   });
 
@@ -388,6 +535,7 @@ function buildPhraseRow(p) {
   delBtn.addEventListener('click', () => {
     deletingId = p.id;
     editingId  = null;
+    openGroups.add(p.category || '');
     renderPhraseList();
   });
 
@@ -404,19 +552,23 @@ function buildEditRow(p) {
   row.className = 'phrase-row phrase-row--editing';
   row.dataset.id = p.id;
 
-  /* Edit fields grid */
   const fieldsGrid = document.createElement('div');
   fieldsGrid.className = 'phrase-row__edit-fields';
 
-  const catInput = makeEditField('Category *', 'category', p.category || '', true, 'category-list');
-  const subInput = makeEditField('Subsection', 'subsection', p.subsection || '', false, 'subsection-list');
-  const enInput  = makeEditField('English', 'en', p.en || '', false);
-  const viInput  = makeEditField('Vietnamese *', 'vi', p.vi || '', true);
-  const noteInput = makeEditField('Note', 'note', p.note || '', false);
+  const catPicker  = makePicker('category', p.category || '');
+  const subPicker  = makePicker('subsection', p.subsection || '');
+  const enInput    = makeEditField('English', 'en', p.en || '', false);
+  const viInput    = makeEditField('Vietnamese *', 'vi', p.vi || '', true);
+  const noteInput  = makeEditField('Note', 'note', p.note || '', false);
+  const audioField = makeAudioField(p.audio_url || null);
 
-  [catInput, subInput, enInput, viInput, noteInput].forEach(f => fieldsGrid.appendChild(f));
+  fieldsGrid.appendChild(wrapField('Category *', catPicker));
+  fieldsGrid.appendChild(wrapField('Subsection', subPicker));
+  fieldsGrid.appendChild(enInput);
+  fieldsGrid.appendChild(viInput);
+  fieldsGrid.appendChild(noteInput);
+  fieldsGrid.appendChild(wrapField("Audio — Marie's recording", audioField));
 
-  /* Row footer: status message + save/cancel */
   const footer = document.createElement('div');
   footer.className = 'phrase-row__footer';
 
@@ -437,23 +589,27 @@ function buildEditRow(p) {
   });
 
   saveBtn.addEventListener('click', async () => {
-    const catVal  = fieldsGrid.querySelector('[data-name="category"]').value.trim();
-    const viVal   = fieldsGrid.querySelector('[data-name="vi"]').value.trim();
+    const catVal = catPicker.getValue();
+    const viVal  = viInput.querySelector('[data-name="vi"]').value.trim();
 
     if (!catVal) { showStatus(editStatus, 'Category is required.', true); return; }
     if (!viVal)  { showStatus(editStatus, 'Vietnamese is required.', true); return; }
+    if (audioField.isUploading()) {
+      showStatus(editStatus, 'Please wait for the audio to finish uploading.', true);
+      return;
+    }
 
     const body = {
       id: p.id,
       category:   catVal,
       vi:         viVal,
-      subsection: fieldsGrid.querySelector('[data-name="subsection"]').value.trim() || null,
-      en:         fieldsGrid.querySelector('[data-name="en"]').value.trim() || null,
-      note:       fieldsGrid.querySelector('[data-name="note"]').value.trim() || null,
+      subsection: subPicker.getValue() || null,
+      en:         enInput.querySelector('[data-name="en"]').value.trim() || null,
+      note:       noteInput.querySelector('[data-name="note"]').value.trim() || null,
+      audio_url:  audioField.getValue() || null,
     };
 
     saveBtn.disabled = true;
-
     try {
       const res = await fetch('/api/admin/phrases', {
         method: 'PUT',
@@ -470,7 +626,8 @@ function buildEditRow(p) {
       const idx = phrases.findIndex(x => x.id === p.id);
       if (idx !== -1) phrases[idx] = data.phrase;
       editingId = null;
-      buildDataLists();
+      openGroups.add(data.phrase.category || '');
+      mountAddControls();
       renderPhraseList();
       showStatus(listStatus, 'Phrase saved.', false);
     } catch (_) {
@@ -488,10 +645,9 @@ function buildEditRow(p) {
   row.appendChild(fieldsGrid);
   row.appendChild(footer);
 
-  /* Focus the first field after paint */
   requestAnimationFrame(() => {
-    const firstInput = fieldsGrid.querySelector('input');
-    if (firstInput) firstInput.focus();
+    const firstSelect = fieldsGrid.querySelector('select');
+    if (firstSelect) firstSelect.focus();
   });
 
   return row;
@@ -503,10 +659,8 @@ function buildConfirmRow(p) {
   row.className = 'phrase-row phrase-row--confirming';
   row.dataset.id = p.id;
 
-  /* Show phrase preview */
   const content = document.createElement('div');
   content.className = 'phrase-row__content';
-
   if (p.en) {
     const en = document.createElement('p');
     en.className = 'phrase-row__en';
@@ -518,14 +672,11 @@ function buildConfirmRow(p) {
   vi.textContent = p.vi;
   content.appendChild(vi);
 
-  /* Confirm strip */
   const confirm = document.createElement('div');
   confirm.className = 'phrase-row__confirm';
-
   const msg = document.createElement('span');
   msg.className = 'confirm-msg';
   msg.textContent = 'Delete this phrase?';
-
   const yesBtn = makeActionBtn('Yes, delete', 'action-btn--yes');
   const noBtn  = makeActionBtn('No, keep', 'action-btn--no');
 
@@ -542,16 +693,16 @@ function buildConfirmRow(p) {
         credentials: 'same-origin',
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      /* 404 means it's already gone — treat as success */
       if (!res.ok && res.status !== 404) {
         deletingId = null;
         renderPhraseList();
         showStatus(listStatus, 'Could not delete phrase.', true);
         return;
       }
+      if (p.audio_url) deleteAudio(p.audio_url);
       phrases    = phrases.filter(x => x.id !== p.id);
       deletingId = null;
-      buildDataLists();
+      mountAddControls();
       renderPhraseList();
       showStatus(listStatus, 'Phrase deleted.', false);
     } catch (_) {
@@ -563,45 +714,36 @@ function buildConfirmRow(p) {
   confirm.appendChild(msg);
   confirm.appendChild(yesBtn);
   confirm.appendChild(noBtn);
-
   row.appendChild(content);
   row.appendChild(confirm);
 
-  /* Focus "No" by default — safer choice for keyboard users */
   requestAnimationFrame(() => noBtn.focus());
-
   return row;
 }
 
 /* ══════════════════════════════════════════════════════
    SMALL DOM HELPERS
    ══════════════════════════════════════════════════════ */
-
-/** Build a labeled text input for the edit grid. */
-function makeEditField(labelText, name, value, required, listId) {
+function makeEditField(labelText, name, value, required) {
   const wrap = document.createElement('div');
   wrap.className = 'form-field';
-
   const lbl = document.createElement('label');
   lbl.className = 'form-label';
   lbl.textContent = labelText;
-  lbl.setAttribute('for', 'edit-' + name + '-' + Math.random().toString(36).slice(2));
-
+  const id = 'edit-' + name + '-' + Math.random().toString(36).slice(2);
+  lbl.setAttribute('for', id);
   const inp = document.createElement('input');
   inp.className = 'form-input';
   inp.type = 'text';
-  inp.id = lbl.getAttribute('for');
-  inp.dataset.name = name;   /* used by save handler to query fields */
+  inp.id = id;
+  inp.dataset.name = name;
   inp.value = value;
   if (required) inp.required = true;
-  if (listId)   inp.setAttribute('list', listId);
-
   wrap.appendChild(lbl);
   wrap.appendChild(inp);
   return wrap;
 }
 
-/** Create a small action button with an optional aria-label. */
 function makeActionBtn(text, modifierClass, ariaLabel) {
   const btn = document.createElement('button');
   btn.type = 'button';

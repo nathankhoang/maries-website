@@ -18,6 +18,7 @@ import {
 
 const MAX_LONG = 2000; // en / vi / note
 const MAX_SHORT = 200; // category / subsection
+const MAX_URL = 1000; // audio_url
 
 /* Parse a possibly-stringified JSON body. */
 function parseBody(req) {
@@ -78,6 +79,7 @@ export default async function handler(req, res) {
           en: clean(body.en, MAX_LONG),
           vi,
           note: noteRaw == null || noteRaw === '' ? null : clean(noteRaw, MAX_LONG),
+          audio_url: body.audio_url ? clean(body.audio_url, MAX_URL) : null,
           sort_order: toSortOrder(body.sort_order),
         });
         return res.status(201).json({ phrase: row });
@@ -106,6 +108,8 @@ export default async function handler(req, res) {
               ? null
               : clean(body.note, MAX_LONG);
         if ('sort_order' in body) fields.sort_order = toSortOrder(body.sort_order);
+        if ('audio_url' in body)
+          fields.audio_url = body.audio_url ? clean(body.audio_url, MAX_URL) : null;
 
         // Reject updates that would blank out a required column.
         if ('category' in fields && !fields.category) {

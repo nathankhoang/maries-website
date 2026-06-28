@@ -722,17 +722,27 @@ a:hover { color: var(--pink-800); }
 }
 .footer__links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 10px 24px;
   justify-content: center;
   list-style: none;
   margin-bottom: 20px;
 }
 .footer__links a {
+  display: inline-block;
   color: rgba(255,255,255,0.65);
   font-size: 0.875rem;
+  padding: 4px 2px;
   transition: color var(--transition);
 }
 .footer__links a:hover { color: white; }
+/* Admin link sits on its own line, set slightly apart as a "staff" entry. */
+.footer__links li:has(.footer__admin) {
+  flex-basis: 100%;
+  margin-top: 6px;
+}
+.footer__links a.footer__admin { color: var(--pink-300); font-weight: 600; }
+.footer__links a.footer__admin:hover { color: #fff; }
 .footer__copy {
   font-size: 0.8rem;
   opacity: 0.5;
@@ -1521,3 +1531,103 @@ textarea:focus-visible,
   .pb-panel { padding: 18px 0 4px; }
   .pb-tab { padding: 14px 14px; font-size: 0.8rem; }
 }
+
+/* ── Phrasebook: audio play button ─────────────── */
+
+/* Flex wrapper that holds .pb-vi + .pb-play side-by-side */
+.pb-vi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pb-vi-row > .pb-vi {
+  flex: 1;
+  min-width: 0; /* prevent long text overflowing the flex container */
+}
+
+/* Round pink play button */
+.pb-play {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--pink-100);
+  color: var(--pink-600);
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), color var(--transition),
+              box-shadow var(--transition), transform var(--transition);
+}
+.pb-play::before {
+  content: '▶';
+}
+.pb-play:hover {
+  background: var(--pink-200);
+  color: var(--pink-700);
+  box-shadow: var(--shadow);
+  transform: scale(1.08);
+}
+.pb-play:active {
+  transform: scale(0.95);
+}
+
+/* Playing state — filled pink with ripple pulse */
+.pb-play.is-playing {
+  background: var(--pink-500);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  animation: pb-pulse 1.4s ease-in-out infinite;
+}
+.pb-play.is-playing::before {
+  content: '⏸';
+}
+.pb-play.is-playing:hover {
+  background: var(--pink-600);
+}
+
+@keyframes pb-pulse {
+  0%, 100% {
+    box-shadow: var(--shadow-sm), 0 0 0 0 rgba(236, 72, 153, 0.45);
+  }
+  55% {
+    box-shadow: var(--shadow-sm), 0 0 0 7px rgba(236, 72, 153, 0);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   Mobile refinements (spacing, fit, footer)
+   ════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .footer { padding: 36px 0; }
+  .footer__links { gap: 8px 20px; }
+
+  /* Scale down the big decorative blossoms so they don't crowd the hero */
+  .page-hero::before { font-size: 5rem; opacity: 0.4; left: -2%; }
+  .page-hero::after  { font-size: 3rem; opacity: 0.3; right: -2%; }
+
+  /* Hero call-to-action buttons: full-width, easy to tap */
+  .hero__actions { width: 100%; }
+  .hero__actions .btn { flex: 1 1 auto; justify-content: center; min-height: 48px; }
+}
+
+@media (max-width: 480px) {
+  .section { padding: 44px 0; }
+  .page-hero { padding: 44px 0 36px; }
+  .hero { padding: 48px 0 40px; }
+  .hero__tagline { font-size: 1rem; }
+  .section__header { margin-bottom: 32px; }
+  .card { padding: 24px; }
+  .footer__links { gap: 6px 16px; }
+  .pb-vi-row { gap: 10px; }
+}
+
+/* Safety net: never allow horizontal scroll on phones (overflow-x: clip keeps
+   the sticky nav working, unlike overflow-x: hidden). */
+html { overflow-x: clip; }

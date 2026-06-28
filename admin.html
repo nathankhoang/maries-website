@@ -61,31 +61,14 @@
         <form id="add-form" novalidate>
           <div class="add-form__grid">
             <div class="form-field">
-              <label class="form-label" for="add-category">
+              <label class="form-label">
                 Category <span class="required-mark" aria-hidden="true">*</span>
               </label>
-              <input
-                class="form-input"
-                type="text"
-                id="add-category"
-                name="category"
-                list="category-list"
-                placeholder="e.g. greetings"
-                autocomplete="off"
-                required
-              />
+              <div id="add-category-picker"></div>
             </div>
             <div class="form-field">
-              <label class="form-label" for="add-subsection">Subsection</label>
-              <input
-                class="form-input"
-                type="text"
-                id="add-subsection"
-                name="subsection"
-                list="subsection-list"
-                placeholder="optional"
-                autocomplete="off"
-              />
+              <label class="form-label">Subsection</label>
+              <div id="add-subsection-picker"></div>
             </div>
             <div class="form-field">
               <label class="form-label" for="add-en">English</label>
@@ -120,6 +103,10 @@
                 placeholder="Optional note or pronunciation hint"
               />
             </div>
+            <div class="form-field form-field--wide">
+              <label class="form-label">Audio — Marie's recording</label>
+              <div id="add-audio"></div>
+            </div>
           </div>
           <div class="add-form__footer">
             <div id="add-status" class="status" role="status" aria-live="polite"></div>
@@ -153,10 +140,6 @@
     </div>
   </main>
 </div>
-
-<!-- Datalists — populated by admin.js -->
-<datalist id="category-list"></datalist>
-<datalist id="subsection-list"></datalist>
 
 <script src="admin.js"></script>
 </body>

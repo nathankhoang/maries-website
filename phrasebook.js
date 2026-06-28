@@ -8,6 +8,23 @@
 
   if (!container) return;
 
+  /* ── Single-clip audio playback tracker ── */
+  var currentAudio = null;
+  var currentBtn   = null;
+
+  function stopCurrent() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if (currentBtn) {
+      currentBtn.classList.remove('is-playing');
+      currentBtn.setAttribute('aria-label', 'Play pronunciation');
+    }
+    currentAudio = null;
+    currentBtn   = null;
+  }
+
   /* ── Category label map ── */
   var LABEL_MAP = {
     pronouns:  'Pronouns',
@@ -63,7 +80,55 @@
     vi.className = 'pb-vi';
     vi.setAttribute('lang', 'vi');
     vi.textContent = row.vi || '';
-    card.appendChild(vi);
+
+    if (row.audio_url) {
+      /* Flex row: Vietnamese text + play button */
+      var viRow = document.createElement('div');
+      viRow.className = 'pb-vi-row';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pb-play';
+      btn.setAttribute('aria-label', 'Play pronunciation');
+
+      btn.addEventListener('click', function () {
+        /* Clicking the active button stops it */
+        if (currentBtn === btn) {
+          stopCurrent();
+          return;
+        }
+        /* Stop anything else that is playing */
+        stopCurrent();
+
+        var audio = new Audio(row.audio_url);
+        currentAudio = audio;
+        currentBtn   = btn;
+        btn.classList.add('is-playing');
+        btn.setAttribute('aria-label', 'Stop pronunciation');
+
+        audio.addEventListener('ended', function () {
+          if (currentAudio === audio) { stopCurrent(); }
+        });
+        audio.addEventListener('error', function () {
+          /* Fail silently — just reset the button */
+          if (currentAudio === audio) { stopCurrent(); }
+        });
+
+        var promise = audio.play();
+        /* Catch autoplay-policy rejections silently */
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(function () {
+            if (currentAudio === audio) { stopCurrent(); }
+          });
+        }
+      });
+
+      viRow.appendChild(vi);
+      viRow.appendChild(btn);
+      card.appendChild(viRow);
+    } else {
+      card.appendChild(vi);
+    }
 
     if (row.note) {
       var note = document.createElement('p');
